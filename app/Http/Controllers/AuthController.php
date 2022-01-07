@@ -82,7 +82,7 @@ class AuthController extends Controller
             'client_secret' => $oClient->secret,
             'username'      => $email,
             'password'      => $password,
-            'scope'         > '*',
+            'scope'         => '*',
         ]);
 
         if ($response->successful()) {
