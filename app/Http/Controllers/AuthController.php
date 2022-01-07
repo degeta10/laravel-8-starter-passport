@@ -44,7 +44,7 @@ class AuthController extends Controller
     public function login(LoginRequest $request)
     {
         if (Auth::attempt($request->validated())) {
-            $oClient = PassportClient::where('password_client', 1)->first();
+            $oClient = PassportClient::where('password_client', 1)->whereRevoked('0')->firstOrFail();
             return $this->getTokenAndRefreshToken($oClient, request('email'), request('password'));
         } else {
             return new JsonResponse(
