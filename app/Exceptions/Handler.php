@@ -5,7 +5,7 @@ namespace App\Exceptions;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Throwable;
@@ -50,16 +50,25 @@ class Handler extends ExceptionHandler
         $this->renderable(function (Throwable $e, $request) {
             if ($request->wantsJson()) {
                 $response = "";
-                if ($this->isAuthentication($e)) {
+                if ($this->isThrottle($e)) {
+                    $response = $this->ThrottleResponse($e);
+                } elseif ($this->isAuthentication($e)) {
                     $response = $this->AuthResponse($e);
-                } else if ($this->isModel($e)) {
+                } elseif ($this->isModel($e)) {
                     $response = $this->ModelResponse($e);
-                } else if ($this->isHttp($e)) {
+                } elseif ($this->isHttp($e)) {
                     $response = $this->HttpResponse($e);
+                } elseif ($e) {
+                    $response = $this->IternalResponse($e);
                 }
                 return $response ? $response : parent::render($request, $e);
             }
         });
+    }
+
+    protected function isThrottle($e)
+    {
+        return $e instanceof ThrottleRequestsException;
     }
 
     protected function isAuthentication($e)
@@ -77,57 +86,52 @@ class Handler extends ExceptionHandler
         return $e instanceof NotFoundHttpException;
     }
 
+    protected function IternalResponse($e)
+    {
+        $message = 'Internal server error';
+        $exception = $e->getMessage();
+        $line = $e->getLine();
+        return response()->error($message, $exception, $line, Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
+
+
+    protected function ThrottleResponse($e)
+    {
+        return response()->error(
+            'Too many attempts, please try after a minute.',
+            $e->getMessage(),
+            $e->getLine(),
+            Response::HTTP_TOO_MANY_REQUESTS
+        );
+    }
+
     protected function AuthResponse($e)
     {
-        $response = ['message' => 'Unauthenticated'];
-        if ($this->env != 'production') {
-            $response = array_merge($response, [
-                'exception' => $e->getMessage()
-            ]);
-        }
-        return new JsonResponse(
-            $response,
+        return response()->error(
+            'Unauthenticated',
+            $e->getMessage(),
+            $e->getLine(),
             Response::HTTP_UNAUTHORIZED
         );
     }
 
     protected function ModelResponse($e)
     {
-        $response = ['message' => 'Not found'];
-        if ($this->env != 'production') {
-            $response = array_merge($response, [
-                'exception' => $e->getMessage()
-            ]);
-        }
-        return new JsonResponse(
-            $response,
+        return response()->error(
+            'Not found',
+            $e->getMessage(),
+            $e->getLine(),
             Response::HTTP_NOT_FOUND
         );
     }
 
     protected function HttpResponse($e)
     {
-        $response = ['message' => 'Incorrect route'];
-        if ($this->env != 'production') {
-            $response = array_merge($response, [
-                'exception' => $e->getMessage()
-            ]);
-        }
-        return new JsonResponse(
-            $response,
+        return response()->error(
+            'Incorrect route',
+            $e->getMessage(),
+            $e->getLine(),
             Response::HTTP_NOT_FOUND
-        );
-    }
-
-    protected function GeneralResponse($e)
-    {
-        $response = ['message' => 'Something went wrong'];
-        $response = array_merge($response, [
-            'exception' => $e->getMessage()
-        ]);
-        return new JsonResponse(
-            $response,
-            Response::HTTP_BAD_REQUEST
         );
     }
 }

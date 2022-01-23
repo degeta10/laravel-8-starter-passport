@@ -16,7 +16,6 @@ class RefreshTokenResource extends JsonResource
     public function toArray($request)
     {
         return [
-            'message'           => 'Success',
             'token_type'        =>  "Bearer",
             'access_token'      =>  $this['access_token'],
             'refresh_token'     =>  $this['refresh_token'],

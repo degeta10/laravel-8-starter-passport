@@ -16,12 +16,11 @@ class LoginResource extends JsonResource
     public function toArray($request)
     {
         return [
-            'message'           => 'Success',
             'token_type'        =>  $this['token_type'],
             'access_token'      =>  $this['access_token'],
             'refresh_token'     =>  $this['refresh_token'],
             'expires_at'        =>  Carbon::now()->addSeconds($this['expires_in'])->toDateTimeString(),
-            'user'              =>  new UserDetailsResponse(auth()->user())
+            'user'              =>  new UserResource(auth()->user())
         ];
     }
 }

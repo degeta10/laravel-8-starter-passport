@@ -20,6 +20,7 @@ Route::group([
     Route::post('signup', [AuthController::class, 'signup']);
     Route::post('login', [AuthController::class, 'login']);
     Route::post('token/refresh', [AuthController::class, 'refreshToken']);
+    Route::post('email-verification/resend', [AuthController::class, 'resendVerificationEmail'])->middleware(['throttle:6,1']);
 });
 
 Route::group([
